@@ -1,4 +1,4 @@
-# Triton-CPU
+# XSAI-Triton-CPU
 
 A long-lived development branch to build an experimental CPU backend for [Triton](https://github.com/openai/triton).
 
