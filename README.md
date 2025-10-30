@@ -5,7 +5,7 @@
 ```
 git clone https://github.com/LeleCheung/XSAI-Triton-CPU.git
 
-cd triton-cpu
+cd XSAI-Triton-CPU
 
 pip install -r python/requirements.txt
 
