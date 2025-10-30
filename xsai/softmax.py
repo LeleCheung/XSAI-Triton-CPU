@@ -44,7 +44,7 @@ def softmax_kernel_row(
 
 def triton_softmax(x: torch.Tensor):
     """Triton implementation of Softmax function (row-wise, numerically stable)"""
-    # 确保输入是浮点类型且连续
+    # make sure input is float and contiguous
     if x.dtype != torch.float32:
         x = x.float()
     x = x.contiguous()
@@ -72,7 +72,7 @@ def triton_softmax(x: torch.Tensor):
 
 # Test function
 def test_softmax():
-    # 检查是否有 CUDA 可用，如果没有则使用 CPU
+    # test if CUDA is available, else use CPU
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f"Using device: {device}")
 
@@ -185,57 +185,9 @@ def test_softmax():
         print(f"Triton kernel execution failed: {e}")
         print("This might be due to Triton not supporting CPU execution for this kernel")
 
-# 添加一个纯 CPU 版本的测试作为备选
-def test_softmax_cpu_fallback():
-    """使用纯 PyTorch 在 CPU 上测试 Softmax 功能"""
-    print("Using PyTorch-only implementation for CPU testing")
-
-    # Create test data with moderate values
-    batch_size, seq_len = 4, 8
-    x = torch.randn(batch_size, seq_len) * 0.5
-
-    print("Input matrix:")
-    print(x)
-
-    # PyTorch reference implementation
-    output_pytorch = torch.softmax(x, dim=-1)
-
-    print("\nPyTorch Softmax output:")
-    print(output_pytorch)
-
-    # Verify each row sums to 1
-    row_sums = output_pytorch.sum(dim=-1)
-    print(f"\nRow sums: {row_sums}")
-    assert torch.allclose(row_sums, torch.ones_like(row_sums), atol=1e-5), "Row sums are not 1"
-    print("✓ Row sums test passed!")
-
-    # Test with specific values
-    print("\n" + "="*50)
-    print("Testing with specific values...")
-
-    # Test with known values
-    test_x = torch.tensor([
-        [1.0, 2.0, 3.0, 4.0],
-        [0.1, 0.2, 0.3, 0.4],
-        [-1.0, -2.0, -3.0, -4.0]
-    ], dtype=torch.float32)
-
-    print("Test input values:")
-    print(test_x)
-
-    test_pytorch = torch.softmax(test_x, dim=-1)
-
-    print("PyTorch Softmax output:")
-    print(test_pytorch)
-
-    print("✓ Specific values test passed!")
-
-    print("\n✓ All CPU tests passed using PyTorch implementation!")
 
 if __name__ == "__main__":
     try:
         test_softmax()
     except Exception as e:
         print(f"Triton test failed: {e}")
-        print("Falling back to CPU-only implementation")
-        test_softmax_cpu_fallback()

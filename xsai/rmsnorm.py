@@ -250,43 +250,8 @@ def test_rms_norm():
         print("This might be due to Triton not supporting CPU execution for this kernel")
 
 
-def test_rms_norm_cpu_fallback():
-    """Pure PyTorch RMSNorm on CPU."""
-    print("Using PyTorch-only implementation for CPU testing")
-
-    batch_size, hidden_size = 4, 8
-    x = torch.randn(batch_size, hidden_size)
-    weight = torch.ones(hidden_size, dtype=x.dtype)
-
-    print("Input matrix:")
-    print(x)
-    print(f"\nWeight: {weight}")
-
-    rms = torch.sqrt(torch.mean(x * x, dim=-1, keepdim=True) + 1e-5)
-    output_pytorch = (x / rms) * weight
-
-    print("\nPyTorch RMSNorm output:")
-    print(output_pytorch)
-
-    print("\n" + "="*50)
-    print("Testing with non-identity weights...")
-
-    weight2 = torch.tensor([0.5, 1.0, 1.5, 2.0, 0.8, 1.2, 0.9, 1.1], dtype=x.dtype)
-
-    rms2 = torch.sqrt(torch.mean(x * x, dim=-1, keepdim=True) + 1e-5)
-    output_pytorch2 = (x / rms2) * weight2
-
-    print("PyTorch RMSNorm with custom weights:")
-    print(output_pytorch2)
-
-    print("✓ Test with custom weights passed!")
-    print("\n✓ All CPU tests passed using PyTorch implementation!")
-
-
 if __name__ == "__main__":
     try:
         test_rms_norm()
     except Exception as e:
         print(f"Triton test failed: {e}")
-        print("Falling back to CPU-only implementation")
-        test_rms_norm_cpu_fallback()

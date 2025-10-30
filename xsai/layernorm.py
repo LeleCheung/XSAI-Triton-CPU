@@ -250,43 +250,8 @@ def test_layernorm():
         print(f"Triton kernel execution failed: {e}")
         print("This might be due to Triton not supporting CPU execution for this kernel")
 
-def test_layernorm_cpu_fallback():
-    """Pure PyTorch LayerNorm on CPU."""
-    print("Using PyTorch-only implementation for CPU testing")
-
-    batch_size, hidden_size = 4, 8
-    x = torch.randn(batch_size, hidden_size)
-    weight = torch.ones(hidden_size, dtype=x.dtype)
-    bias = torch.zeros(hidden_size, dtype=x.dtype)
-
-    print("Input matrix:")
-    print(x)
-    print(f"\nWeight: {weight}")
-    print(f"Bias: {bias}")
-
-    output_pytorch = torch.nn.functional.layer_norm(x, (hidden_size,), weight, bias)
-
-    print("\nPyTorch LayerNorm output:")
-    print(output_pytorch)
-
-    print("\n" + "="*50)
-    print("Testing with non-identity weights and biases...")
-
-    weight2 = torch.tensor([0.5, 1.0, 1.5, 2.0, 0.8, 1.2, 0.9, 1.1], dtype=x.dtype)
-    bias2 = torch.tensor([0.1, -0.1, 0.2, -0.2, 0.05, -0.05, 0.15, -0.15], dtype=x.dtype)
-
-    output_pytorch2 = torch.nn.functional.layer_norm(x, (hidden_size,), weight2, bias2)
-
-    print("PyTorch LayerNorm with custom params:")
-    print(output_pytorch2)
-
-    print("✓ Test with custom weights/biases passed!")
-    print("\n✓ All CPU tests passed using PyTorch implementation!")
-
 if __name__ == "__main__":
     try:
         test_layernorm()
     except Exception as e:
         print(f"Triton test failed: {e}")
-        print("Falling back to CPU-only implementation")
-        test_layernorm_cpu_fallback()
