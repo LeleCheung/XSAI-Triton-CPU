@@ -1,5 +1,32 @@
 # XSAI-Triton-CPU
 
+# Introduction
+
+```
+git clone https://github.com/LeleCheung/XSAI-Triton-CPU.git
+
+cd triton-cpu
+
+pip install -r python/requirements.txt
+
+# 如果遇到遇到error: externally-managed-environment
+sudo mv /usr/lib/python3.x/EXTERNALLY-MANAGED /usr/lib/python3.x/EXTERNALLY-MANAGED.bk # 这里x为实际版本代码 
+
+# 内存有限时，注意添加编译选项
+MAX_JOBS=2 pip install --no-build-isolation -e python
+
+# 算子正确性测试
+TRITON_CPU_BACKEND=1 python3 xsai/relu.py
+
+# dump amx
+TRITON_KERNEL_DUMP=1
+TRITON_DUMP_DIR=/data/root/tmp_file/
+TRITON_ALWAYS_COMPILE=1
+```
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+# Triton-CPU
+
 A long-lived development branch to build an experimental CPU backend for [Triton](https://github.com/openai/triton).
 
 This repository clones the main Triton repository, but we intend to minimize
