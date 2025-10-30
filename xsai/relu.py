@@ -35,7 +35,7 @@ def relu_kernel(
 
 def triton_relu(x: torch.Tensor):
     """Triton implementation of ReLU function"""
-    # 确保输入是浮点类型且连续
+    # make sure input is float and contiguous
     if x.dtype != torch.float32:
         x = x.float()
     x = x.contiguous()
@@ -63,7 +63,7 @@ def triton_relu(x: torch.Tensor):
 
 # Test function
 def test_relu():
-    # 检查是否有 CUDA 可用，如果没有则使用 CPU
+    # test if CUDA is available, else use CPU
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f"Using device: {device}")
 
@@ -117,49 +117,9 @@ def test_relu():
         print(f"Triton kernel execution failed: {e}")
         print("This might be due to Triton not supporting CPU execution for this kernel")
 
-# 添加一个纯 CPU 版本的测试作为备选
-def test_relu_cpu_fallback():
-    """使用纯 PyTorch 在 CPU 上测试 ReLU 功能"""
-    print("Using PyTorch-only implementation for CPU testing")
-
-    # Create test data with mixed positive and negative values
-    batch_size, hidden_size = 4, 8
-    x = torch.randn(batch_size, hidden_size)
-
-    print("Input matrix:")
-    print(x)
-
-    # PyTorch reference implementation
-    output_pytorch = torch.nn.functional.relu(x)
-
-    print("\nPyTorch ReLU output:")
-    print(output_pytorch)
-
-    # Test with specific values to verify behavior
-    print("\n" + "="*50)
-    print("Testing with specific values...")
-
-    # Test with known positive, negative and zero values
-    test_x = torch.tensor([
-        [3.0, -2.0, 0.0, 1.5, -1.0, 0.5, -0.5, 2.0]
-    ], dtype=torch.float32)
-
-    test_pytorch = torch.nn.functional.relu(test_x)
-
-    print("Test input values:", test_x)
-    print("PyTorch ReLU output:", test_pytorch)
-
-    # Verify specific behavior
-    expected = torch.tensor([[3.0, 0.0, 0.0, 1.5, 0.0, 0.5, 0.0, 2.0]])
-    assert torch.allclose(test_pytorch, expected, atol=1e-5), "Specific values test failed"
-    print("✓ Specific values test passed!")
-
-    print("\n✓ All CPU tests passed using PyTorch implementation!")
 
 if __name__ == "__main__":
     try:
         test_relu()
     except Exception as e:
         print(f"Triton test failed: {e}")
-        print("Falling back to CPU-only implementation")
-        test_relu_cpu_fallback()
