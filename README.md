@@ -19,9 +19,10 @@ MAX_JOBS=2 pip install --no-build-isolation -e python
 TRITON_CPU_BACKEND=1 python3 xsai/relu.py
 
 # dump amx
-TRITON_KERNEL_DUMP=1
-TRITON_DUMP_DIR=/data/root/tmp_file/
-TRITON_ALWAYS_COMPILE=1
+export TRITON_KERNEL_DUMP=1
+export TRITON_DUMP_DIR=xsai/amxdump
+export TRITON_ALWAYS_COMPILE=1
+TRITON_CPU_BACKEND=1 python3 xsai/relu.py
 ```
 
 # Triton-CPU
