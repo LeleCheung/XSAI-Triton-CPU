@@ -1,88 +1,59 @@
 #!/bin/bash
+set -euo pipefail
 
-# if the argument is init, export the environment variables
-if [ "$1" == "gemm" ]; then
-    export TRITON_KERNEL_DUMP=1 
-    export TRITON_DUMP_DIR=xsai/amxdump 
-    export TRITON_ALWAYS_COMPILE=1 
-    export TRITON_CPU_BACKEND=1
-    echo "TRITON_KERNEL_DUMP=$TRITON_KERNEL_DUMP"
-    echo "TRITON_DUMP_DIR=$TRITON_DUMP_DIR"
-    echo "TRITON_ALWAYS_COMPILE=$TRITON_ALWAYS_COMPILE"
-    echo "TRITON_CPU_BACKEND=$TRITON_CPU_BACKEND"
-    mkdir -p "$TRITON_DUMP_DIR"
-    python3 xsai/gemm.py
-    echo "Test GEMM executed."
-elif [ "$1" == "layernorm" ]; then
-    export TRITON_KERNEL_DUMP=1 
-    export TRITON_DUMP_DIR=xsai/amxdump 
-    export TRITON_ALWAYS_COMPILE=1 
-    export TRITON_CPU_BACKEND=1
-    echo "TRITON_KERNEL_DUMP=$TRITON_KERNEL_DUMP"
-    echo "TRITON_DUMP_DIR=$TRITON_DUMP_DIR"
-    echo "TRITON_ALWAYS_COMPILE=$TRITON_ALWAYS_COMPILE"
-    echo "TRITON_CPU_BACKEND=$TRITON_CPU_BACKEND"
-    mkdir -p "$TRITON_DUMP_DIR"
-    python3 xsai/layernorm.py
-    echo "Test LayerNorm executed."
-elif [ "$1" == "relu" ]; then
-    export TRITON_KERNEL_DUMP=1 
-    export TRITON_DUMP_DIR=xsai/amxdump 
-    export TRITON_ALWAYS_COMPILE=1 
-    export TRITON_CPU_BACKEND=1
-    echo "TRITON_KERNEL_DUMP=$TRITON_KERNEL_DUMP"
-    echo "TRITON_DUMP_DIR=$TRITON_DUMP_DIR"
-    echo "TRITON_ALWAYS_COMPILE=$TRITON_ALWAYS_COMPILE"
-    echo "TRITON_CPU_BACKEND=$TRITON_CPU_BACKEND"
-    mkdir -p "$TRITON_DUMP_DIR"
-    python3 xsai/relu.py
-    echo "Test ReLU executed."
-elif [ "$1" == "rmsnorm" ]; then
-    export TRITON_KERNEL_DUMP=1 
-    export TRITON_DUMP_DIR=xsai/amxdump 
-    export TRITON_ALWAYS_COMPILE=1 
-    export TRITON_CPU_BACKEND=1
-    echo "TRITON_KERNEL_DUMP=$TRITON_KERNEL_DUMP"
-    echo "TRITON_DUMP_DIR=$TRITON_DUMP_DIR"
-    echo "TRITON_ALWAYS_COMPILE=$TRITON_ALWAYS_COMPILE"
-    echo "TRITON_CPU_BACKEND=$TRITON_CPU_BACKEND"
-    mkdir -p "$TRITON_DUMP_DIR"
-    python3 xsai/rmsnorm.py
-    echo "Test RMSNorm executed."
-elif [ "$1" == "silu" ]; then
-    export TRITON_KERNEL_DUMP=1 
-    export TRITON_DUMP_DIR=xsai/amxdump 
-    export TRITON_ALWAYS_COMPILE=1 
-    export TRITON_CPU_BACKEND=1
-    echo "TRITON_KERNEL_DUMP=$TRITON_KERNEL_DUMP"
-    echo "TRITON_DUMP_DIR=$TRITON_DUMP_DIR"
-    echo "TRITON_ALWAYS_COMPILE=$TRITON_ALWAYS_COMPILE"
-    echo "TRITON_CPU_BACKEND=$TRITON_CPU_BACKEND"
-    mkdir -p "$TRITON_DUMP_DIR"
-    python3 xsai/silu.py
-    echo "Test SiLU executed."
-elif [ "$1" == "softmax" ]; then
-    export TRITON_KERNEL_DUMP=1 
-    export TRITON_DUMP_DIR=xsai/amxdump 
-    export TRITON_ALWAYS_COMPILE=1 
-    export TRITON_CPU_BACKEND=1
-    echo "TRITON_KERNEL_DUMP=$TRITON_KERNEL_DUMP"
-    echo "TRITON_DUMP_DIR=$TRITON_DUMP_DIR"
-    echo "TRITON_ALWAYS_COMPILE=$TRITON_ALWAYS_COMPILE"
-    mkdir -p "$TRITON_DUMP_DIR"
-    python3 xsai/softmax.py
-    echo "Test Softmax executed."
-elif [ "$1" == "clean" ]; then
-    rm -rf xsai/amxdump
-    echo "Dump directory cleaned."
-else
-    echo "Usage: $0 {gemm|layernorm|relu|rmsnorm|silu|softmax|clean}"
-    echo "  gemm  - Run GEMM test script"
-    echo "  layernorm  - Run LayerNorm test script"
-    echo "  relu  - Run ReLU test script"
-    echo "  rmsnorm  - Run RMSNorm test script"
-    echo "  silu  - Run SiLU test script"
-    echo "  softmax  - Run Softmax test script"
-    echo "  clean - Remove dump directory"
+DUMP_DIR="xsai/amxdump"
+
+usage() {
+    echo "Usage: $0 {gemm|layernorm|relu|rmsnorm|silu|softmax|clean|gemm-debug|layernorm-debug|relu-debug|rmsnorm-debug|silu-debug|softmax-debug}"
     exit 1
-fi
+}
+
+set_env() {
+    export TRITON_KERNEL_DUMP=1
+    export TRITON_DUMP_DIR="$DUMP_DIR"
+    export TRITON_ALWAYS_COMPILE=1
+    export TRITON_CPU_BACKEND=1
+    mkdir -p "$TRITON_DUMP_DIR"
+    echo "TRITON_KERNEL_DUMP=$TRITON_KERNEL_DUMP"
+    echo "TRITON_DUMP_DIR=$TRITON_DUMP_DIR"
+    echo "TRITON_ALWAYS_COMPILE=$TRITON_ALWAYS_COMPILE"
+    echo "TRITON_CPU_BACKEND=${TRITON_CPU_BACKEND:-}"
+}
+
+set_debug() {
+    export TRITON_CPU_AMX_DEBUG=1
+    echo "Debug environment variables set."
+}
+
+run_test() {
+    local name="$1"
+    set_env
+    python3 "xsai/${name}.py"
+    echo "Test ${name} executed."
+}
+
+debug_test() {
+    local name="$1"
+    set_env
+    set_debug
+    python3 "xsai/${name}.py"
+    echo "Debug test ${name} executed."
+}
+
+[ $# -eq 0 ] && usage
+
+case "$1" in
+    gemm|layernorm|relu|rmsnorm|silu|softmax)
+        run_test "$1"
+        ;;
+    gemm-debug|layernorm-debug|relu-debug|rmsnorm-debug|silu-debug|softmax-debug)
+        debug_test "${1%-debug}"
+        ;;
+    clean)
+        rm -rf "$DUMP_DIR"
+        echo "Dump directory cleaned."
+        ;;
+    *)
+        usage
+        ;;
+esac
