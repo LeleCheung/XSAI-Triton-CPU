@@ -1,0 +1,721 @@
+# ===================================================================
+# LLM GEMM/BMM/elementwise_ops 算子尺度配置 (MNK)
+# 数据来源: LLM矩阵运算统计.xlsx (Prefill.csv, Decode.csv)
+# 包含MODEL：
+# Qwen3_30B_A3B, Qwen3_235B_A22B, Qwen3_0_6B, Qwen3_1_7B, Qwen3_4B, Qwen3_8B, Qwen3_14B, Qwen3_32B, 
+# DeepSeek_V3, DeepSeek_V3_0324, DeepSeek_V3_1, 
+# Meta_Llama_3_8B, Meta_Llama_3_70B, Meta_Llama_3_1_8B,
+# Meta_Llama_2_7B, Meta_Llama_2_13B, Meta_Llama_2_70B
+# - Prefill: M=4096 (seq_len)
+# - Decode:  M=1
+# - BMM(qk/pv): batch_size = num_heads; qk的{m=seq_len,k=head_dim,n=seq_len}；
+#               pv的{m=seq_len,k=seq_len,n=head_dim}；Decode 时 seq_len=4096。
+# - elementwise_ops:
+#   - rms_norm: size = hidden_size
+#   - ffn_activation(silu): size = intermediate_size
+#   - attention_softmax: size = num_heads * seq_len (Prefill) 或 num_heads * 4096 (Decode)
+# ===================================================================
+
+models:
+
+  Qwen3_30B_A3B:
+    hidden_size: 2048
+    intermediate_size: 6144
+    num_heads: 32
+    num_kv_heads: 4
+    head_dim: 128
+
+    Prefill:
+      gemm_ops:
+        up_proj:   { m: 4096, k: 2048, n: 6144 }
+        down_proj: { m: 4096, k: 6144, n: 2048 }
+        q_proj:    { m: 4096, k: 2048, n: 4096 }
+        kv_proj:   { m: 4096, k: 2048, n: 512 }
+        o_proj:    { m: 4096, k: 4096, n: 2048 }
+      bmm_ops:
+        qk: { batch_size: 32, m: 4096, k: 128, n: 4096 }
+        pv: { batch_size: 32, m: 4096, k: 4096, n: 128 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 2048 }
+        pre_ffn_norm_rms:       { size: 2048 }
+        ffn_activation_silu:    { size: 6144 }
+        attention_softmax:      { size: 32 * 4096 }
+
+    Decode:
+      gemm_ops:
+        up_proj:   { m: 1, k: 2048, n: 6144 }
+        down_proj: { m: 1, k: 6144, n: 2048 }
+        q_proj:    { m: 1, k: 2048, n: 4096 }
+        kv_proj:   { m: 1, k: 2048, n: 512 }
+        o_proj:    { m: 1, k: 4096, n: 2048 }
+      bmm_ops:
+        qk: { batch_size: 32, m: 1, k: 128, n: 4096 }
+        pv: { batch_size: 32, m: 1, k: 4096, n: 128 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 2048 }
+        pre_ffn_norm_rms:       { size: 2048 }
+        ffn_activation_silu:    { size: 6144 }
+        attention_softmax:      { size: 32 * 4096 }
+
+  Qwen3_235B_A22B:
+    hidden_size: 4096
+    intermediate_size: 12288
+    num_heads: 64
+    num_kv_heads: 4
+    head_dim: 128
+
+    Prefill:
+      gemm_ops:
+        up_proj:   { m: 4096, k: 4096, n: 12288 }
+        down_proj: { m: 4096, k: 12288, n: 4096 }
+        q_proj:    { m: 4096, k: 4096, n: 8192 }
+        kv_proj:   { m: 4096, k: 4096, n: 512 }
+        o_proj:    { m: 4096, k: 8192, n: 4096 }
+      bmm_ops:
+        qk: { batch_size: 64, m: 4096, k: 128, n: 4096 }
+        pv: { batch_size: 64, m: 4096, k: 4096, n: 128 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 4096 }
+        pre_ffn_norm_rms:       { size: 4096 }
+        ffn_activation_silu:    { size: 12288 }
+        attention_softmax:      { size: 64 * 4096 }
+
+    Decode:
+      gemm_ops:
+        up_proj:   { m: 1, k: 4096, n: 12288 }
+        down_proj: { m: 1, k: 12288, n: 4096 }
+        q_proj:    { m: 1, k: 4096, n: 8192 }
+        kv_proj:   { m: 1, k: 4096, n: 512 }
+        o_proj:    { m: 1, k: 8192, n: 4096 }
+      bmm_ops:
+        qk: { batch_size: 64, m: 1, k: 128, n: 4096 }
+        pv: { batch_size: 64, m: 1, k: 4096, n: 128 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 4096 }
+        pre_ffn_norm_rms:       { size: 4096 }
+        ffn_activation_silu:    { size: 12288 }
+        attention_softmax:      { size: 64 * 4096 }
+
+  Qwen3_0_6B:
+    hidden_size: 1024
+    intermediate_size: 3072
+    num_heads: 16
+    num_kv_heads: 8
+    head_dim: 128
+
+    Prefill:
+      gemm_ops:
+        up_proj:   { m: 4096, k: 1024, n: 3072 }
+        down_proj: { m: 4096, k: 3072, n: 1024 }
+        q_proj:    { m: 4096, k: 1024, n: 2048 }
+        kv_proj:   { m: 4096, k: 1024, n: 1024 }
+        o_proj:    { m: 4096, k: 2048, n: 1024 }
+      bmm_ops:
+        qk: { batch_size: 16, m: 4096, k: 128, n: 4096 }
+        pv: { batch_size: 16, m: 4096, k: 4096, n: 128 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 1024 }
+        pre_ffn_norm_rms:       { size: 1024 }
+        ffn_activation_silu:    { size: 3072 }
+        attention_softmax:      { size: 16 * 4096 }
+
+    Decode:
+      gemm_ops:
+        up_proj:   { m: 1, k: 1024, n: 3072 }
+        down_proj: { m: 1, k: 3072, n: 1024 }
+        q_proj:    { m: 1, k: 1024, n: 2048 }
+        kv_proj:   { m: 1, k: 1024, n: 1024 }
+        o_proj:    { m: 1, k: 2048, n: 1024 }
+      bmm_ops:
+        qk: { batch_size: 16, m: 1, k: 128, n: 4096 }
+        pv: { batch_size: 16, m: 1, k: 4096, n: 128 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 1024 }
+        pre_ffn_norm_rms:       { size: 1024 }
+        ffn_activation_silu:    { size: 3072 }
+        attention_softmax:      { size: 16 * 4096 }
+
+  Qwen3_1_7B:
+    hidden_size: 2048
+    intermediate_size: 6144
+    num_heads: 16
+    num_kv_heads: 8
+    head_dim: 128
+
+    Prefill:
+      gemm_ops:
+        up_proj:   { m: 4096, k: 2048, n: 6144 }
+        down_proj: { m: 4096, k: 6144, n: 2048 }
+        q_proj:    { m: 4096, k: 2048, n: 2048 }
+        kv_proj:   { m: 4096, k: 2048, n: 1024 }
+        o_proj:    { m: 4096, k: 2048, n: 2048 }
+      bmm_ops:
+        qk: { batch_size: 16, m: 4096, k: 128, n: 4096 }
+        pv: { batch_size: 16, m: 4096, k: 4096, n: 128 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 2048 }
+        pre_ffn_norm_rms:       { size: 2048 }
+        ffn_activation_silu:    { size: 6144 }
+        attention_softmax:      { size: 16 * 4096 }
+
+    Decode:
+      gemm_ops:
+        up_proj:   { m: 1, k: 2048, n: 6144 }
+        down_proj: { m: 1, k: 6144, n: 2048 }
+        q_proj:    { m: 1, k: 2048, n: 2048 }
+        kv_proj:   { m: 1, k: 2048, n: 1024 }
+        o_proj:    { m: 1, k: 2048, n: 2048 }
+      bmm_ops:
+        qk: { batch_size: 16, m: 1, k: 128, n: 4096 }
+        pv: { batch_size: 16, m: 1, k: 4096, n: 128 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 2048 }
+        pre_ffn_norm_rms:       { size: 2048 }
+        ffn_activation_silu:    { size: 6144 }
+        attention_softmax:      { size: 16 * 4096 }
+
+  Qwen3_4B:
+    hidden_size: 2560
+    intermediate_size: 9728
+    num_heads: 32
+    num_kv_heads: 8
+    head_dim: 128
+
+    Prefill:
+      gemm_ops:
+        up_proj:   { m: 4096, k: 2560, n: 9728 }
+        down_proj: { m: 4096, k: 9728, n: 2560 }
+        q_proj:    { m: 4096, k: 2560, n: 4096 }
+        kv_proj:   { m: 4096, k: 2560, n: 1024 }
+        o_proj:    { m: 4096, k: 4096, n: 2560 }
+      bmm_ops:
+        qk: { batch_size: 32, m: 4096, k: 128, n: 4096 }
+        pv: { batch_size: 32, m: 4096, k: 4096, n: 128 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 2560 }
+        pre_ffn_norm_rms:       { size: 2560 }
+        ffn_activation_silu:    { size: 9728 }
+        attention_softmax:      { size: 32 * 4096 }
+
+    Decode:
+      gemm_ops:
+        up_proj:   { m: 1, k: 2560, n: 9728 }
+        down_proj: { m: 1, k: 9728, n: 2560 }
+        q_proj:    { m: 1, k: 2560, n: 4096 }
+        kv_proj:   { m: 1, k: 2560, n: 1024 }
+        o_proj:    { m: 1, k: 4096, n: 2560 }
+      bmm_ops:
+        qk: { batch_size: 32, m: 1, k: 128, n: 4096 }
+        pv: { batch_size: 32, m: 1, k: 4096, n: 128 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 2560 }
+        pre_ffn_norm_rms:       { size: 2560 }
+        ffn_activation_silu:    { size: 9728 }
+        attention_softmax:      { size: 32 * 4096 }
+
+  Qwen3_8B:
+    hidden_size: 4096
+    intermediate_size: 12288
+    num_heads: 32
+    num_kv_heads: 8
+    head_dim: 128
+
+    Prefill:
+      gemm_ops:
+        up_proj:   { m: 4096, k: 4096, n: 12288 }
+        down_proj: { m: 4096, k: 12288, n: 4096 }
+        q_proj:    { m: 4096, k: 4096, n: 4096 }
+        kv_proj:   { m: 4096, k: 4096, n: 1024 }
+        o_proj:    { m: 4096, k: 4096, n: 4096 }
+      bmm_ops:
+        qk: { batch_size: 32, m: 4096, k: 128, n: 4096 }
+        pv: { batch_size: 32, m: 4096, k: 4096, n: 128 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 4096 }
+        pre_ffn_norm_rms:       { size: 4096 }
+        ffn_activation_silu:    { size: 12288 }
+        attention_softmax:      { size: 32 * 4096 }
+
+    Decode:
+      gemm_ops:
+        up_proj:   { m: 1, k: 4096, n: 12288 }
+        down_proj: { m: 1, k: 12288, n: 4096 }
+        q_proj:    { m: 1, k: 4096, n: 4096 }
+        kv_proj:   { m: 1, k: 4096, n: 1024 }
+        o_proj:    { m: 1, k: 4096, n: 4096 }
+      bmm_ops:
+        qk: { batch_size: 32, m: 1, k: 128, n: 4096 }
+        pv: { batch_size: 32, m: 1, k: 4096, n: 128 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 4096 }
+        pre_ffn_norm_rms:       { size: 4096 }
+        ffn_activation_silu:    { size: 12288 }
+        attention_softmax:      { size: 32 * 4096 }
+
+  Qwen3_14B:
+    hidden_size: 5120
+    intermediate_size: 17408
+    num_heads: 40
+    num_kv_heads: 8
+    head_dim: 128
+
+    Prefill:
+      gemm_ops:
+        up_proj:   { m: 4096, k: 5120, n: 17408 }
+        down_proj: { m: 4096, k: 17408, n: 5120 }
+        q_proj:    { m: 4096, k: 5120, n: 5120 }
+        kv_proj:   { m: 4096, k: 5120, n: 1024 }
+        o_proj:    { m: 4096, k: 5120, n: 5120 }
+      bmm_ops:
+        qk: { batch_size: 40, m: 4096, k: 128, n: 4096 }
+        pv: { batch_size: 40, m: 4096, k: 4096, n: 128 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 5120 }
+        pre_ffn_norm_rms:       { size: 5120 }
+        ffn_activation_silu:    { size: 17408 }
+        attention_softmax:      { size: 40 * 4096 }
+
+    Decode:
+      gemm_ops:
+        up_proj:   { m: 1, k: 5120, n: 17408 }
+        down_proj: { m: 1, k: 17408, n: 5120 }
+        q_proj:    { m: 1, k: 5120, n: 5120 }
+        kv_proj:   { m: 1, k: 5120, n: 1024 }
+        o_proj:    { m: 1, k: 5120, n: 5120 }
+      bmm_ops:
+        qk: { batch_size: 40, m: 1, k: 128, n: 4096 }
+        pv: { batch_size: 40, m: 1, k: 4096, n: 128 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 5120 }
+        pre_ffn_norm_rms:       { size: 5120 }
+        ffn_activation_silu:    { size: 17408 }
+        attention_softmax:      { size: 40 * 4096 }
+
+  Qwen3_32B:
+    hidden_size: 5120
+    intermediate_size: 25600
+    num_heads: 64
+    num_kv_heads: 8
+    head_dim: 128
+
+    Prefill:
+      gemm_ops:
+        up_proj:   { m: 4096, k: 5120, n: 25600 }
+        down_proj: { m: 4096, k: 25600, n: 5120 }
+        q_proj:    { m: 4096, k: 5120, n: 8192 }
+        kv_proj:   { m: 4096, k: 5120, n: 1024 }
+        o_proj:    { m: 4096, k: 8192, n: 5120 }
+      bmm_ops:
+        qk: { batch_size: 64, m: 4096, k: 128, n: 4096 }
+        pv: { batch_size: 64, m: 4096, k: 4096, n: 128 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 5120 }
+        pre_ffn_norm_rms:       { size: 5120 }
+        ffn_activation_silu:    { size: 25600 }
+        attention_softmax:      { size: 64 * 4096 }
+
+    Decode:
+      gemm_ops:
+        up_proj:   { m: 1, k: 5120, n: 25600 }
+        down_proj: { m: 1, k: 25600, n: 5120 }
+        q_proj:    { m: 1, k: 5120, n: 8192 }
+        kv_proj:   { m: 1, k: 5120, n: 1024 }
+        o_proj:    { m: 1, k: 8192, n: 5120 }
+      bmm_ops:
+        qk: { batch_size: 64, m: 1, k: 128, n: 4096 }
+        pv: { batch_size: 64, m: 1, k: 4096, n: 128 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 5120 }
+        pre_ffn_norm_rms:       { size: 5120 }
+        ffn_activation_silu:    { size: 25600 }
+        attention_softmax:      { size: 64 * 4096 }
+
+  DeepSeek_V3:
+    hidden_size: 7168
+    intermediate_size: 18432
+    num_heads: 128
+    num_kv_heads: 128
+    head_dim: 64
+
+    Prefill:
+      gemm_ops:
+        up_proj:   { m: 4096, k: 7168, n: 18432 }
+        down_proj: { m: 4096, k: 18432, n: 7168 }
+        q_proj:    { m: 4096, k: 7168, n: 8192 }
+        kv_proj:   { m: 4096, k: 7168, n: 8192 }
+        o_proj:    { m: 4096, k: 8192, n: 7168 }
+      bmm_ops:
+        qk: { batch_size: 128, m: 4096, k: 64, n: 4096 }
+        pv: { batch_size: 128, m: 4096, k: 4096, n: 64 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 7168 }
+        pre_ffn_norm_rms:       { size: 7168 }
+        ffn_activation_silu:    { size: 18432 }
+        attention_softmax:      { size: 128 * 4096 }
+
+    Decode:
+      gemm_ops:
+        up_proj:   { m: 1, k: 7168, n: 18432 }
+        down_proj: { m: 1, k: 18432, n: 7168 }
+        q_proj:    { m: 1, k: 7168, n: 8192 }
+        kv_proj:   { m: 1, k: 7168, n: 8192 }
+        o_proj:    { m: 1, k: 8192, n: 7168 }
+      bmm_ops:
+        qk: { batch_size: 128, m: 1, k: 64, n: 4096 }
+        pv: { batch_size: 128, m: 1, k: 4096, n: 64 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 7168 }
+        pre_ffn_norm_rms:       { size: 7168 }
+        ffn_activation_silu:    { size: 18432 }
+        attention_softmax:      { size: 128 * 4096 }
+
+  DeepSeek_V3_0324:
+    hidden_size: 7168
+    intermediate_size: 18432
+    num_heads: 128
+    num_kv_heads: 128
+    head_dim: 64
+
+    Prefill:
+      gemm_ops:
+        up_proj:   { m: 4096, k: 7168, n: 18432 }
+        down_proj: { m: 4096, k: 18432, n: 7168 }
+        q_proj:    { m: 4096, k: 7168, n: 8192 }
+        kv_proj:   { m: 4096, k: 7168, n: 8192 }
+        o_proj:    { m: 4096, k: 8192, n: 7168 }
+      bmm_ops:
+        qk: { batch_size: 128, m: 4096, k: 64, n: 4096 }
+        pv: { batch_size: 128, m: 4096, k: 4096, n: 64 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 7168 }
+        pre_ffn_norm_rms:       { size: 7168 }
+        ffn_activation_silu:    { size: 18432 }
+        attention_softmax:      { size: 128 * 4096 }
+
+    Decode:
+      gemm_ops:
+        up_proj:   { m: 1, k: 7168, n: 18432 }
+        down_proj: { m: 1, k: 18432, n: 7168 }
+        q_proj:    { m: 1, k: 7168, n: 8192 }
+        kv_proj:   { m: 1, k: 7168, n: 8192 }
+        o_proj:    { m: 1, k: 8192, n: 7168 }
+      bmm_ops:
+        qk: { batch_size: 128, m: 1, k: 64, n: 4096 }
+        pv: { batch_size: 128, m: 1, k: 4096, n: 64 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 7168 }
+        pre_ffn_norm_rms:       { size: 7168 }
+        ffn_activation_silu:    { size: 18432 }
+        attention_softmax:      { size: 128 * 4096 }
+
+  DeepSeek_V3_1:
+    hidden_size: 7168
+    intermediate_size: 18432
+    num_heads: 128
+    num_kv_heads: 128
+    head_dim: 64
+
+    Prefill:
+      gemm_ops:
+        up_proj:   { m: 4096, k: 7168, n: 18432 }
+        down_proj: { m: 4096, k: 18432, n: 7168 }
+        q_proj:    { m: 4096, k: 7168, n: 8192 }
+        kv_proj:   { m: 4096, k: 7168, n: 8192 }
+        o_proj:    { m: 4096, k: 8192, n: 7168 }
+      bmm_ops:
+        qk: { batch_size: 128, m: 4096, k: 64, n: 4096 }
+        pv: { batch_size: 128, m: 4096, k: 4096, n: 64 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 7168 }
+        pre_ffn_norm_rms:       { size: 7168 }
+        ffn_activation_silu:    { size: 18432 }
+        attention_softmax:      { size: 128 * 4096 }
+
+    Decode:
+      gemm_ops:
+        up_proj:   { m: 1, k: 7168, n: 18432 }
+        down_proj: { m: 1, k: 18432, n: 7168 }
+        q_proj:    { m: 1, k: 7168, n: 8192 }
+        kv_proj:   { m: 1, k: 7168, n: 8192 }
+        o_proj:    { m: 1, k: 8192, n: 7168 }
+      bmm_ops:
+        qk: { batch_size: 128, m: 1, k: 64, n: 4096 }
+        pv: { batch_size: 128, m: 1, k: 4096, n: 64 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 7168 }
+        pre_ffn_norm_rms:       { size: 7168 }
+        ffn_activation_silu:    { size: 18432 }
+        attention_softmax:      { size: 128 * 4096 }
+
+  Meta_Llama_3_8B:
+    hidden_size: 4096
+    intermediate_size: 14336
+    num_heads: 32
+    num_kv_heads: 8
+    head_dim: 128
+
+    Prefill:
+      gemm_ops:
+        up_proj:   { m: 4096, k: 4096, n: 14336 }
+        down_proj: { m: 4096, k: 14336, n: 4096 }
+        q_proj:    { m: 4096, k: 4096, n: 4096 }
+        kv_proj:   { m: 4096, k: 4096, n: 1024 }
+        o_proj:    { m: 4096, k: 4096, n: 4096 }
+      bmm_ops:
+        qk: { batch_size: 32, m: 4096, k: 128, n: 4096 }
+        pv: { batch_size: 32, m: 4096, k: 4096, n: 128 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 4096 }
+        pre_ffn_norm_rms:       { size: 4096 }
+        ffn_activation_silu:    { size: 14336 }
+        attention_softmax:      { size: 32 * 4096 }
+
+    Decode:
+      gemm_ops:
+        up_proj:   { m: 1, k: 4096, n: 14336 }
+        down_proj: { m: 1, k: 14336, n: 4096 }
+        q_proj:    { m: 1, k: 4096, n: 4096 }
+        kv_proj:   { m: 1, k: 4096, n: 1024 }
+        o_proj:    { m: 1, k: 4096, n: 4096 }
+      bmm_ops:
+        qk: { batch_size: 32, m: 1, k: 128, n: 4096 }
+        pv: { batch_size: 32, m: 1, k: 4096, n: 128 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 4096 }
+        pre_ffn_norm_rms:       { size: 4096 }
+        ffn_activation_silu:    { size: 14336 }
+        attention_softmax:      { size: 32 * 4096 }
+
+  Meta_Llama_3_70B:
+    hidden_size: 8192
+    intermediate_size: 28672
+    num_heads: 64
+    num_kv_heads: 8
+    head_dim: 128
+
+    Prefill:
+      gemm_ops:
+        up_proj:   { m: 4096, k: 8192, n: 28672 }
+        down_proj: { m: 4096, k: 28672, n: 8192 }
+        q_proj:    { m: 4096, k: 8192, n: 8192 }
+        kv_proj:   { m: 4096, k: 8192, n: 1024 }
+        o_proj:    { m: 4096, k: 8192, n: 8192 }
+      bmm_ops:
+        qk: { batch_size: 64, m: 4096, k: 128, n: 4096 }
+        pv: { batch_size: 64, m: 4096, k: 4096, n: 128 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 8192 }
+        pre_ffn_norm_rms:       { size: 8192 }
+        ffn_activation_silu:    { size: 28672 }
+        attention_softmax:      { size: 64 * 4096 }
+
+    Decode:
+      gemm_ops:
+        up_proj:   { m: 1, k: 8192, n: 28672 }
+        down_proj: { m: 1, k: 28672, n: 8192 }
+        q_proj:    { m: 1, k: 8192, n: 8192 }
+        kv_proj:   { m: 1, k: 8192, n: 1024 }
+        o_proj:    { m: 1, k: 8192, n: 8192 }
+      bmm_ops:
+        qk: { batch_size: 64, m: 1, k: 128, n: 4096 }
+        pv: { batch_size: 64, m: 1, k: 4096, n: 128 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 8192 }
+        pre_ffn_norm_rms:       { size: 8192 }
+        ffn_activation_silu:    { size: 28672 }
+        attention_softmax:      { size: 64 * 4096 }
+
+  Meta_Llama_3_1_8B:
+    hidden_size: 4096
+    intermediate_size: 14336
+    num_heads: 32
+    num_kv_heads: 8
+    head_dim: 128
+
+    Prefill:
+      gemm_ops:
+        up_proj:   { m: 4096, k: 4096, n: 14336 }
+        down_proj: { m: 4096, k: 14336, n: 4096 }
+        q_proj:    { m: 4096, k: 4096, n: 4096 }
+        kv_proj:   { m: 4096, k: 4096, n: 1024 }
+        o_proj:    { m: 4096, k: 4096, n: 4096 }
+      bmm_ops:
+        qk: { batch_size: 32, m: 4096, k: 128, n: 4096 }
+        pv: { batch_size: 32, m: 4096, k: 4096, n: 128 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 4096 }
+        pre_ffn_norm_rms:       { size: 4096 }
+        ffn_activation_silu:    { size: 14336 }
+        attention_softmax:      { size: 32 * 4096 }
+
+    Decode:
+      gemm_ops:
+        up_proj:   { m: 1, k: 4096, n: 14336 }
+        down_proj: { m: 1, k: 14336, n: 4096 }
+        q_proj:    { m: 1, k: 4096, n: 4096 }
+        kv_proj:   { m: 1, k: 4096, n: 1024 }
+        o_proj:    { m: 1, k: 4096, n: 4096 }
+      bmm_ops:
+        qk: { batch_size: 32, m: 1, k: 128, n: 4096 }
+        pv: { batch_size: 32, m: 1, k: 4096, n: 128 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 4096 }
+        pre_ffn_norm_rms:       { size: 4096 }
+        ffn_activation_silu:    { size: 14336 }
+        attention_softmax:      { size: 32 * 4096 }
+
+  Meta_Llama_3_1_70B:
+    hidden_size: 8192
+    intermediate_size: 28672
+    num_heads: 64
+    num_kv_heads: 8
+    head_dim: 128
+
+    Prefill:
+      gemm_ops:
+        up_proj:   { m: 4096, k: 8192, n: 28672 }
+        down_proj: { m: 4096, k: 28672, n: 8192 }
+        q_proj:    { m: 4096, k: 8192, n: 8192 }
+        kv_proj:   { m: 4096, k: 8192, n: 1024 }
+        o_proj:    { m: 4096, k: 8192, n: 8192 }
+      bmm_ops:
+        qk: { batch_size: 64, m: 4096, k: 128, n: 4096 }
+        pv: { batch_size: 64, m: 4096, k: 4096, n: 128 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 8192 }
+        pre_ffn_norm_rms:       { size: 8192 }
+        ffn_activation_silu:    { size: 28672 }
+        attention_softmax:      { size: 64 * 4096 }
+
+    Decode:
+      gemm_ops:
+        up_proj:   { m: 1, k: 8192, n: 28672 }
+        down_proj: { m: 1, k: 28672, n: 8192 }
+        q_proj:    { m: 1, k: 8192, n: 8192 }
+        kv_proj:   { m: 1, k: 8192, n: 1024 }
+        o_proj:    { m: 1, k: 8192, n: 8192 }
+      bmm_ops:
+        qk: { batch_size: 64, m: 1, k: 128, n: 4096 }
+        pv: { batch_size: 64, m: 1, k: 4096, n: 128 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 8192 }
+        pre_ffn_norm_rms:       { size: 8192 }
+        ffn_activation_silu:    { size: 28672 }
+        attention_softmax:      { size: 64 * 4096 }
+
+  Meta_Llama_2_7B:
+    hidden_size: 4096
+    intermediate_size: 11008
+    num_heads: 32
+    num_kv_heads: 32
+    head_dim: 128
+
+    Prefill:
+      gemm_ops:
+        up_proj:   { m: 4096, k: 4096, n: 11008 }
+        down_proj: { m: 4096, k: 11008, n: 4096 }
+        q_proj:    { m: 4096, k: 4096, n: 4096 }
+        kv_proj:   { m: 4096, k: 4096, n: 4096 }
+        o_proj:    { m: 4096, k: 4096, n: 4096 }
+      bmm_ops:
+        qk: { batch_size: 32, m: 4096, k: 128, n: 4096 }
+        pv: { batch_size: 32, m: 4096, k: 4096, n: 128 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 4096 }
+        pre_ffn_norm_rms:       { size: 4096 }
+        ffn_activation_silu:    { size: 11008 }
+        attention_softmax:      { size: 32 * 4096 }
+
+    Decode:
+      gemm_ops:
+        up_proj:   { m: 1, k: 4096, n: 11008 }
+        down_proj: { m: 1, k: 11008, n: 4096 }
+        q_proj:    { m: 1, k: 4096, n: 4096 }
+        kv_proj:   { m: 1, k: 4096, n: 4096 }
+        o_proj:    { m: 1, k: 4096, n: 4096 }
+      bmm_ops:
+        qk: { batch_size: 32, m: 1, k: 128, n: 4096 }
+        pv: { batch_size: 32, m: 1, k: 4096, n: 128 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 4096 }
+        pre_ffn_norm_rms:       { size: 4096 }
+        ffn_activation_silu:    { size: 11008 }
+        attention_softmax:      { size: 32 * 4096 }
+
+  Meta_Llama_2_13B:
+    hidden_size: 5120
+    intermediate_size: 13824
+    num_heads: 40
+    num_kv_heads: 40
+    head_dim: 128
+
+    Prefill:
+      gemm_ops:
+        up_proj:   { m: 4096, k: 5120, n: 13824 }
+        down_proj: { m: 4096, k: 13824, n: 5120 }
+        q_proj:    { m: 4096, k: 5120, n: 5120 }
+        kv_proj:   { m: 4096, k: 5120, n: 5120 }
+        o_proj:    { m: 4096, k: 5120, n: 5120 }
+      bmm_ops:
+        qk: { batch_size: 40, m: 4096, k: 128, n: 4096 }
+        pv: { batch_size: 40, m: 4096, k: 4096, n: 128 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 5120 }
+        pre_ffn_norm_rms:       { size: 5120 }
+        ffn_activation_silu:    { size: 13824 }
+        attention_softmax:      { size: 40 * 4096 }
+
+    Decode:
+      gemm_ops:
+        up_proj:   { m: 1, k: 5120, n: 13824 }
+        down_proj: { m: 1, k: 13824, n: 5120 }
+        q_proj:    { m: 1, k: 5120, n: 5120 }
+        kv_proj:   { m: 1, k: 5120, n: 5120 }
+        o_proj:    { m: 1, k: 5120, n: 5120 }
+      bmm_ops:
+        qk: { batch_size: 40, m: 1, k: 128, n: 4096 }
+        pv: { batch_size: 40, m: 1, k: 4096, n: 128 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 5120 }
+        pre_ffn_norm_rms:       { size: 5120 }
+        ffn_activation_silu:    { size: 13824 }
+        attention_softmax:      { size: 40 * 4096 }
+
+  Meta_Llama_2_70B:
+    hidden_size: 8192
+    intermediate_size: 28672
+    num_heads: 64
+    num_kv_heads: 8
+    head_dim: 128
+
+    Prefill:
+      gemm_ops:
+        up_proj:   { m: 4096, k: 8192, n: 28672 }
+        down_proj: { m: 4096, k: 28672, n: 8192 }
+        q_proj:    { m: 4096, k: 8192, n: 8192 }
+        kv_proj:   { m: 4096, k: 8192, n: 1024 }
+        o_proj:    { m: 4096, k: 8192, n: 8192 }
+      bmm_ops:
+        qk: { batch_size: 64, m: 4096, k: 128, n: 4096 }
+        pv: { batch_size: 64, m: 4096, k: 4096, n: 128 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 8192 }
+        pre_ffn_norm_rms:       { size: 8192 }
+        ffn_activation_silu:    { size: 28672 }
+        attention_softmax:      { size: 64 * 4096 }
+
+    Decode:
+      gemm_ops:
+        up_proj:   { m: 1, k: 8192, n: 28672 }
+        down_proj: { m: 1, k: 28672, n: 8192 }
+        q_proj:    { m: 1, k: 8192, n: 8192 }
+        kv_proj:   { m: 1, k: 8192, n: 1024 }
+        o_proj:    { m: 1, k: 8192, n: 8192 }
+      bmm_ops:
+        qk: { batch_size: 64, m: 1, k: 128, n: 4096 }
+        pv: { batch_size: 64, m: 1, k: 4096, n: 128 }
+      elementwise_ops:
+        pre_attention_norm_rms: { size: 8192 }
+        pre_ffn_norm_rms:       { size: 8192 }
+        ffn_activation_silu:    { size: 28672 }
+        attention_softmax:      { size: 64 * 4096 }
