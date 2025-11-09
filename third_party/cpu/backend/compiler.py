@@ -14,6 +14,17 @@ from triton.runtime.build import _build
 import triton.backends.cpu.driver as cpu_driver
 
 
+# ------- Debug helpers for AMX investigation -------
+def _amx_debug_enabled() -> bool:
+    """Enable verbose AMX debug logging when TRITON_CPU_AMX_DEBUG=1."""
+    return os.getenv("TRITON_CPU_AMX_DEBUG", "0") == "1"
+
+
+def _amx_debug(*args, **kwargs):
+    if _amx_debug_enabled():
+        print("[TRITON-CPU AMX]", *args, **kwargs)
+
+
 def min_dot_size(target: GPUTarget):
     # Other architectures will only support 16,16,16
     return lambda lhsType, rhsType: (4, 4, 4)
@@ -118,14 +129,30 @@ class CPUBackend(BaseBackend):
         self.cpu_arch = llvm.get_cpu_tripple().split("-")[0]
         self.cpu_name = llvm.get_cpu_name()
         self.cpu_features = llvm.get_cpu_features()
+        # AMX debug: print basic CPU info and features
+        _amx_debug("cpu_arch=", self.cpu_arch)
+        _amx_debug("cpu_name=", self.cpu_name)
+        _amx_debug("cpu_features=", sorted(list(self.cpu_features)))
         if 'amx-tile' in self.cpu_features:
+            _amx_debug("Detected 'amx-tile' in cpu_features; attempting to enable AMX for this process ...")
             if not cpu.enable_amx():
                 import warnings
                 warnings.warn("Warning! Couldn't enable AMX for the process. AMX optimizations are disabled.")
+                _amx_debug("cpu.enable_amx() returned False. Disabling AMX-related features.")
                 self.cpu_features.discard('amx-tile')
                 self.cpu_features.discard('amx-int8')
                 self.cpu_features.discard('amx-fp16')
                 self.cpu_features.discard('amx-bf16')
+                _amx_debug("cpu_features after disabling AMX:", sorted(list(self.cpu_features)))
+            else:
+                _amx_debug("cpu.enable_amx() succeeded. AMX will be used if lowering selects it.")
+                _amx_debug("AMX flags present:", {
+                    'amx-int8': 'amx-int8' in self.cpu_features,
+                    'amx-bf16': 'amx-bf16' in self.cpu_features,
+                    'amx-fp16': 'amx-fp16' in self.cpu_features,
+                })
+        else:
+            _amx_debug("'amx-tile' NOT found in cpu_features; AMX lowering will be skipped.")
 
     def parse_options(self, opts) -> Any:
         args = {k: opts[k] for k in CPUOptions.__dataclass_fields__.keys() if k in opts}
@@ -213,9 +240,17 @@ class CPUBackend(BaseBackend):
             # FP16 support is not in AMX dialect yet
             amx_fp16 = False
             amx_bf16 = 'amx-bf16' in self.cpu_features
+            _amx_debug("Adding AMX lowering pass: add_convert_dot_to_amx",
+                       {"amx_int8": amx_int8, "amx_fp16": amx_fp16, "amx_bf16": amx_bf16})
             cpu.passes.ttcpuir.add_convert_dot_to_amx(pm, amx_int8, amx_fp16, amx_bf16)
+        else:
+            _amx_debug("Skipping AMX lowering (no 'amx-tile' in cpu_features) at make_tttcir stage.")
         if 'avx512f' in self.cpu_features:
+            _amx_debug("Adding AVX512 FMA lowering pass: add_convert_dot_to_fma")
             cpu.passes.ttcpuir.add_convert_dot_to_fma(pm)
+        else:
+            _amx_debug("AVX512F not present; skipping add_convert_dot_to_fma")
+        _amx_debug("Adding generic dot lowering pass: add_convert_dot_generic (fallback)")
         cpu.passes.ttcpuir.add_convert_dot_generic(pm)
         promote_bf16_to_fp32 = self.cpu_arch == "x86_64" and "avx512bf16" not in self.cpu_features
         # We don't have any lowering for mixed precision matmuls, so always use casts for now
