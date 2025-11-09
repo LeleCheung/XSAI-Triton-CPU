@@ -15,14 +15,14 @@ sudo mv /usr/lib/python3.x/EXTERNALLY-MANAGED /usr/lib/python3.x/EXTERNALLY-MANA
 # 内存有限时，注意添加编译选项
 MAX_JOBS=2 pip install --no-build-isolation -e python
 
-# 算子正确性测试
-TRITON_CPU_BACKEND=1 python3 xsai/relu.py
+# run test: gemm/relu/silu/softmax/layernorm/rmsnorm
+bash xsai.sh gemm
 
-# dump amx
-export TRITON_KERNEL_DUMP=1
-export TRITON_DUMP_DIR=xsai/amxdump
-export TRITON_ALWAYS_COMPILE=1
-TRITON_CPU_BACKEND=1 python3 xsai/relu.py
+# run test in debug mode: gemm-debug/relu-debug/silu-debug/softmax-debug/layernorm-debug/rmsnorm-debug
+bash xsai.sh gemm-debug
+
+# clean amxdump
+bash xsai.sh clean
 ```
 
 # Triton-CPU
