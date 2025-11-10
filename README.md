@@ -16,13 +16,8 @@ sudo mv /usr/lib/python3.x/EXTERNALLY-MANAGED /usr/lib/python3.x/EXTERNALLY-MANA
 MAX_JOBS=2 pip install --no-build-isolation -e python
 
 # run test: gemm/relu/silu/softmax/layernorm/rmsnorm
-bash xsai.sh gemm
-
-# run test in debug mode: gemm-debug/relu-debug/silu-debug/softmax-debug/layernorm-debug/rmsnorm-debug
-bash xsai.sh gemm-debug
-
-# clean amxdump
-bash xsai.sh clean
+cd xsai
+./xsai.sh gemm dump Qwen3_30B_A3B Prefill gemm_ops up_proj
 ```
 
 # Triton-CPU
