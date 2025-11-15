@@ -11,9 +11,9 @@
 # - BMM(qk/pv): batch_size = num_heads; qk的{m=seq_len,k=head_dim,n=seq_len}；
 #               pv的{m=seq_len,k=seq_len,n=head_dim}；Decode 时 seq_len=4096。
 # - elementwise_ops:
-#   - rms_norm: size = hidden_size
-#   - ffn_activation(silu): size = intermediate_size
-#   - attention_softmax: size = num_heads * seq_len (Prefill) 或 num_heads * 4096 (Decode)
+#   - rms_norm: head_dim = hidden_size
+#   - ffn_activation(silu): head_dim = intermediate_size
+#   - attention_softmax: head_dim = num_heads * seq_len (Prefill) 或 num_heads * 4096 (Decode)
 # ===================================================================
 
 models:
@@ -36,10 +36,10 @@ models:
         qk: { batch_size: 32, m: 4096, k: 128, n: 4096 }
         pv: { batch_size: 32, m: 4096, k: 4096, n: 128 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 2048 }
-        pre_ffn_norm_rms:       { size: 2048 }
-        ffn_activation_silu:    { size: 6144 }
-        attention_softmax:      { size: 32 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 4096, head_dim: 2048 }
+        pre_ffn_rmsnorm:        { seq_len: 4096, head_dim: 2048 }
+        ffn_activation_silu:    { seq_len: 4096, head_dim: 6144 }
+        attention_softmax:      { seq_len: 4096, head_dim: 4096 }
 
     Decode:
       gemm_ops:
@@ -52,10 +52,10 @@ models:
         qk: { batch_size: 32, m: 1, k: 128, n: 4096 }
         pv: { batch_size: 32, m: 1, k: 4096, n: 128 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 2048 }
-        pre_ffn_norm_rms:       { size: 2048 }
-        ffn_activation_silu:    { size: 6144 }
-        attention_softmax:      { size: 32 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 1, head_dim: 2048 }
+        pre_ffn_rmsnorm:        { seq_len: 1, head_dim: 2048 }
+        ffn_activation_silu:    { seq_len: 1, head_dim: 6144 }
+        attention_softmax:      { seq_len: 1, head_dim: 4096 }
 
   Qwen3_235B_A22B:
     hidden_size: 4096
@@ -75,10 +75,10 @@ models:
         qk: { batch_size: 64, m: 4096, k: 128, n: 4096 }
         pv: { batch_size: 64, m: 4096, k: 4096, n: 128 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 4096 }
-        pre_ffn_norm_rms:       { size: 4096 }
-        ffn_activation_silu:    { size: 12288 }
-        attention_softmax:      { size: 64 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 4096, head_dim: 4096 }
+        pre_ffn_rmsnorm:        { seq_len: 4096, head_dim: 4096 }
+        ffn_activation_silu:    { seq_len: 4096, head_dim: 12288 }
+        attention_softmax:      { seq_len: 4096, head_dim: 4096 }
 
     Decode:
       gemm_ops:
@@ -91,10 +91,10 @@ models:
         qk: { batch_size: 64, m: 1, k: 128, n: 4096 }
         pv: { batch_size: 64, m: 1, k: 4096, n: 128 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 4096 }
-        pre_ffn_norm_rms:       { size: 4096 }
-        ffn_activation_silu:    { size: 12288 }
-        attention_softmax:      { size: 64 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 1, head_dim: 4096 }
+        pre_ffn_rmsnorm:        { seq_len: 1, head_dim: 4096 }
+        ffn_activation_silu:    { seq_len: 1, head_dim: 12288 }
+        attention_softmax:      { seq_len: 1, head_dim: 4096 }
 
   Qwen3_0_6B:
     hidden_size: 1024
@@ -114,10 +114,10 @@ models:
         qk: { batch_size: 16, m: 4096, k: 128, n: 4096 }
         pv: { batch_size: 16, m: 4096, k: 4096, n: 128 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 1024 }
-        pre_ffn_norm_rms:       { size: 1024 }
-        ffn_activation_silu:    { size: 3072 }
-        attention_softmax:      { size: 16 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 4096, head_dim: 1024 }
+        pre_ffn_rmsnorm:        { seq_len: 4096, head_dim: 1024 }
+        ffn_activation_silu:    { seq_len: 4096, head_dim: 3072 }
+        attention_softmax:      { seq_len: 4096, head_dim: 4096 }
 
     Decode:
       gemm_ops:
@@ -130,10 +130,10 @@ models:
         qk: { batch_size: 16, m: 1, k: 128, n: 4096 }
         pv: { batch_size: 16, m: 1, k: 4096, n: 128 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 1024 }
-        pre_ffn_norm_rms:       { size: 1024 }
-        ffn_activation_silu:    { size: 3072 }
-        attention_softmax:      { size: 16 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 1, head_dim: 1024 }
+        pre_ffn_rmsnorm:        { seq_len: 1, head_dim: 1024 }
+        ffn_activation_silu:    { seq_len: 1, head_dim: 3072 }
+        attention_softmax:      { seq_len: 1, head_dim: 4096 }
 
   Qwen3_1_7B:
     hidden_size: 2048
@@ -153,10 +153,10 @@ models:
         qk: { batch_size: 16, m: 4096, k: 128, n: 4096 }
         pv: { batch_size: 16, m: 4096, k: 4096, n: 128 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 2048 }
-        pre_ffn_norm_rms:       { size: 2048 }
-        ffn_activation_silu:    { size: 6144 }
-        attention_softmax:      { size: 16 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 4096, head_dim: 2048 }
+        pre_ffn_rmsnorm:        { seq_len: 4096, head_dim: 2048 }
+        ffn_activation_silu:    { seq_len: 4096, head_dim: 6144 }
+        attention_softmax:      { seq_len: 4096, head_dim: 4096 }
 
     Decode:
       gemm_ops:
@@ -169,10 +169,10 @@ models:
         qk: { batch_size: 16, m: 1, k: 128, n: 4096 }
         pv: { batch_size: 16, m: 1, k: 4096, n: 128 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 2048 }
-        pre_ffn_norm_rms:       { size: 2048 }
-        ffn_activation_silu:    { size: 6144 }
-        attention_softmax:      { size: 16 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 1, head_dim: 2048 }
+        pre_ffn_rmsnorm:        { seq_len: 1, head_dim: 2048 }
+        ffn_activation_silu:    { seq_len: 1, head_dim: 6144 }
+        attention_softmax:      { seq_len: 1, head_dim: 4096 }
 
   Qwen3_4B:
     hidden_size: 2560
@@ -192,10 +192,10 @@ models:
         qk: { batch_size: 32, m: 4096, k: 128, n: 4096 }
         pv: { batch_size: 32, m: 4096, k: 4096, n: 128 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 2560 }
-        pre_ffn_norm_rms:       { size: 2560 }
-        ffn_activation_silu:    { size: 9728 }
-        attention_softmax:      { size: 32 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 4096, head_dim: 2560 }
+        pre_ffn_rmsnorm:        { seq_len: 4096, head_dim: 2560 }
+        ffn_activation_silu:    { seq_len: 4096, head_dim: 9728 }
+        attention_softmax:      { seq_len: 4096, head_dim: 4096 }
 
     Decode:
       gemm_ops:
@@ -208,10 +208,10 @@ models:
         qk: { batch_size: 32, m: 1, k: 128, n: 4096 }
         pv: { batch_size: 32, m: 1, k: 4096, n: 128 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 2560 }
-        pre_ffn_norm_rms:       { size: 2560 }
-        ffn_activation_silu:    { size: 9728 }
-        attention_softmax:      { size: 32 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 1, head_dim: 2560 }
+        pre_ffn_rmsnorm:        { seq_len: 1, head_dim: 2560 }
+        ffn_activation_silu:    { seq_len: 1, head_dim: 9728 }
+        attention_softmax:      { seq_len: 1, head_dim: 4096 }
 
   Qwen3_8B:
     hidden_size: 4096
@@ -231,10 +231,10 @@ models:
         qk: { batch_size: 32, m: 4096, k: 128, n: 4096 }
         pv: { batch_size: 32, m: 4096, k: 4096, n: 128 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 4096 }
-        pre_ffn_norm_rms:       { size: 4096 }
-        ffn_activation_silu:    { size: 12288 }
-        attention_softmax:      { size: 32 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 4096, head_dim: 4096 }
+        pre_ffn_rmsnorm:        { seq_len: 4096, head_dim: 4096 }
+        ffn_activation_silu:    { seq_len: 4096, head_dim: 12288 }
+        attention_softmax:      { seq_len: 4096, head_dim: 4096 }
 
     Decode:
       gemm_ops:
@@ -247,10 +247,10 @@ models:
         qk: { batch_size: 32, m: 1, k: 128, n: 4096 }
         pv: { batch_size: 32, m: 1, k: 4096, n: 128 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 4096 }
-        pre_ffn_norm_rms:       { size: 4096 }
-        ffn_activation_silu:    { size: 12288 }
-        attention_softmax:      { size: 32 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 1, head_dim: 4096 }
+        pre_ffn_rmsnorm:        { seq_len: 1, head_dim: 4096 }
+        ffn_activation_silu:    { seq_len: 1, head_dim: 12288 }
+        attention_softmax:      { seq_len: 1, head_dim: 4096 }
 
   Qwen3_14B:
     hidden_size: 5120
@@ -270,10 +270,10 @@ models:
         qk: { batch_size: 40, m: 4096, k: 128, n: 4096 }
         pv: { batch_size: 40, m: 4096, k: 4096, n: 128 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 5120 }
-        pre_ffn_norm_rms:       { size: 5120 }
-        ffn_activation_silu:    { size: 17408 }
-        attention_softmax:      { size: 40 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 4096, head_dim: 5120 }
+        pre_ffn_rmsnorm:        { seq_len: 4096, head_dim: 5120 }
+        ffn_activation_silu:    { seq_len: 4096, head_dim: 17408 }
+        attention_softmax:      { seq_len: 4096, head_dim: 4096 }
 
     Decode:
       gemm_ops:
@@ -286,10 +286,10 @@ models:
         qk: { batch_size: 40, m: 1, k: 128, n: 4096 }
         pv: { batch_size: 40, m: 1, k: 4096, n: 128 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 5120 }
-        pre_ffn_norm_rms:       { size: 5120 }
-        ffn_activation_silu:    { size: 17408 }
-        attention_softmax:      { size: 40 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 1, head_dim: 5120 }
+        pre_ffn_rmsnorm:        { seq_len: 1, head_dim: 5120 }
+        ffn_activation_silu:    { seq_len: 1, head_dim: 17408 }
+        attention_softmax:      { seq_len: 1, head_dim: 4096 }
 
   Qwen3_32B:
     hidden_size: 5120
@@ -309,10 +309,10 @@ models:
         qk: { batch_size: 64, m: 4096, k: 128, n: 4096 }
         pv: { batch_size: 64, m: 4096, k: 4096, n: 128 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 5120 }
-        pre_ffn_norm_rms:       { size: 5120 }
-        ffn_activation_silu:    { size: 25600 }
-        attention_softmax:      { size: 64 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 4096, head_dim: 5120 }
+        pre_ffn_rmsnorm:        { seq_len: 4096, head_dim: 5120 }
+        ffn_activation_silu:    { seq_len: 4096, head_dim: 25600 }
+        attention_softmax:      { seq_len: 4096, head_dim: 4096 }
 
     Decode:
       gemm_ops:
@@ -325,10 +325,10 @@ models:
         qk: { batch_size: 64, m: 1, k: 128, n: 4096 }
         pv: { batch_size: 64, m: 1, k: 4096, n: 128 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 5120 }
-        pre_ffn_norm_rms:       { size: 5120 }
-        ffn_activation_silu:    { size: 25600 }
-        attention_softmax:      { size: 64 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 1, head_dim: 5120 }
+        pre_ffn_rmsnorm:        { seq_len: 1, head_dim: 5120 }
+        ffn_activation_silu:    { seq_len: 1, head_dim: 25600 }
+        attention_softmax:      { seq_len: 1, head_dim: 4096 }
 
   DeepSeek_V3:
     hidden_size: 7168
@@ -348,10 +348,10 @@ models:
         qk: { batch_size: 128, m: 4096, k: 64, n: 4096 }
         pv: { batch_size: 128, m: 4096, k: 4096, n: 64 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 7168 }
-        pre_ffn_norm_rms:       { size: 7168 }
-        ffn_activation_silu:    { size: 18432 }
-        attention_softmax:      { size: 128 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 4096, head_dim: 7168 }
+        pre_ffn_rmsnorm:        { seq_len: 4096, head_dim: 7168 }
+        ffn_activation_silu:    { seq_len: 4096, head_dim: 18432 }
+        attention_softmax:      { seq_len: 4096, head_dim: 4096 }
 
     Decode:
       gemm_ops:
@@ -364,10 +364,10 @@ models:
         qk: { batch_size: 128, m: 1, k: 64, n: 4096 }
         pv: { batch_size: 128, m: 1, k: 4096, n: 64 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 7168 }
-        pre_ffn_norm_rms:       { size: 7168 }
-        ffn_activation_silu:    { size: 18432 }
-        attention_softmax:      { size: 128 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 1, head_dim: 7168 }
+        pre_ffn_rmsnorm:        { seq_len: 1, head_dim: 7168 }
+        ffn_activation_silu:    { seq_len: 1, head_dim: 18432 }
+        attention_softmax:      { seq_len: 1, head_dim: 4096 }
 
   DeepSeek_V3_0324:
     hidden_size: 7168
@@ -387,10 +387,10 @@ models:
         qk: { batch_size: 128, m: 4096, k: 64, n: 4096 }
         pv: { batch_size: 128, m: 4096, k: 4096, n: 64 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 7168 }
-        pre_ffn_norm_rms:       { size: 7168 }
-        ffn_activation_silu:    { size: 18432 }
-        attention_softmax:      { size: 128 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 4096, head_dim: 7168 }
+        pre_ffn_rmsnorm:        { seq_len: 4096, head_dim: 7168 }
+        ffn_activation_silu:    { seq_len: 4096, head_dim: 18432 }
+        attention_softmax:      { seq_len: 4096, head_dim: 4096 }
 
     Decode:
       gemm_ops:
@@ -403,10 +403,10 @@ models:
         qk: { batch_size: 128, m: 1, k: 64, n: 4096 }
         pv: { batch_size: 128, m: 1, k: 4096, n: 64 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 7168 }
-        pre_ffn_norm_rms:       { size: 7168 }
-        ffn_activation_silu:    { size: 18432 }
-        attention_softmax:      { size: 128 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 1, head_dim: 7168 }
+        pre_ffn_rmsnorm:        { seq_len: 1, head_dim: 7168 }
+        ffn_activation_silu:    { seq_len: 1, head_dim: 18432 }
+        attention_softmax:      { seq_len: 1, head_dim: 4096 }
 
   DeepSeek_V3_1:
     hidden_size: 7168
@@ -426,10 +426,10 @@ models:
         qk: { batch_size: 128, m: 4096, k: 64, n: 4096 }
         pv: { batch_size: 128, m: 4096, k: 4096, n: 64 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 7168 }
-        pre_ffn_norm_rms:       { size: 7168 }
-        ffn_activation_silu:    { size: 18432 }
-        attention_softmax:      { size: 128 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 4096, head_dim: 7168 }
+        pre_ffn_rmsnorm:        { seq_len: 4096, head_dim: 7168 }
+        ffn_activation_silu:    { seq_len: 4096, head_dim: 18432 }
+        attention_softmax:      { seq_len: 4096, head_dim: 4096 }
 
     Decode:
       gemm_ops:
@@ -442,10 +442,10 @@ models:
         qk: { batch_size: 128, m: 1, k: 64, n: 4096 }
         pv: { batch_size: 128, m: 1, k: 4096, n: 64 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 7168 }
-        pre_ffn_norm_rms:       { size: 7168 }
-        ffn_activation_silu:    { size: 18432 }
-        attention_softmax:      { size: 128 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 1, head_dim: 7168 }
+        pre_ffn_rmsnorm:        { seq_len: 1, head_dim: 7168 }
+        ffn_activation_silu:    { seq_len: 1, head_dim: 18432 }
+        attention_softmax:      { seq_len: 1, head_dim: 4096 }
 
   Meta_Llama_3_8B:
     hidden_size: 4096
@@ -465,10 +465,10 @@ models:
         qk: { batch_size: 32, m: 4096, k: 128, n: 4096 }
         pv: { batch_size: 32, m: 4096, k: 4096, n: 128 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 4096 }
-        pre_ffn_norm_rms:       { size: 4096 }
-        ffn_activation_silu:    { size: 14336 }
-        attention_softmax:      { size: 32 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 4096, head_dim: 4096 }
+        pre_ffn_rmsnorm:        { seq_len: 4096, head_dim: 4096 }
+        ffn_activation_silu:    { seq_len: 4096, head_dim: 14336 }
+        attention_softmax:      { seq_len: 4096, head_dim: 4096 }
 
     Decode:
       gemm_ops:
@@ -481,10 +481,10 @@ models:
         qk: { batch_size: 32, m: 1, k: 128, n: 4096 }
         pv: { batch_size: 32, m: 1, k: 4096, n: 128 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 4096 }
-        pre_ffn_norm_rms:       { size: 4096 }
-        ffn_activation_silu:    { size: 14336 }
-        attention_softmax:      { size: 32 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 1, head_dim: 4096 }
+        pre_ffn_rmsnorm:        { seq_len: 1, head_dim: 4096 }
+        ffn_activation_silu:    { seq_len: 1, head_dim: 14336 }
+        attention_softmax:      { seq_len: 1, head_dim: 4096 }
 
   Meta_Llama_3_70B:
     hidden_size: 8192
@@ -504,10 +504,10 @@ models:
         qk: { batch_size: 64, m: 4096, k: 128, n: 4096 }
         pv: { batch_size: 64, m: 4096, k: 4096, n: 128 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 8192 }
-        pre_ffn_norm_rms:       { size: 8192 }
-        ffn_activation_silu:    { size: 28672 }
-        attention_softmax:      { size: 64 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 4096, head_dim: 8192 }
+        pre_ffn_rmsnorm:        { seq_len: 4096, head_dim: 8192 }
+        ffn_activation_silu:    { seq_len: 4096, head_dim: 28672 }
+        attention_softmax:      { seq_len: 4096, head_dim: 4096 }
 
     Decode:
       gemm_ops:
@@ -520,10 +520,10 @@ models:
         qk: { batch_size: 64, m: 1, k: 128, n: 4096 }
         pv: { batch_size: 64, m: 1, k: 4096, n: 128 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 8192 }
-        pre_ffn_norm_rms:       { size: 8192 }
-        ffn_activation_silu:    { size: 28672 }
-        attention_softmax:      { size: 64 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 1, head_dim: 8192 }
+        pre_ffn_rmsnorm:        { seq_len: 1, head_dim: 8192 }
+        ffn_activation_silu:    { seq_len: 1, head_dim: 28672 }
+        attention_softmax:      { seq_len: 1, head_dim: 4096 }
 
   Meta_Llama_3_1_8B:
     hidden_size: 4096
@@ -543,10 +543,10 @@ models:
         qk: { batch_size: 32, m: 4096, k: 128, n: 4096 }
         pv: { batch_size: 32, m: 4096, k: 4096, n: 128 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 4096 }
-        pre_ffn_norm_rms:       { size: 4096 }
-        ffn_activation_silu:    { size: 14336 }
-        attention_softmax:      { size: 32 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 4096, head_dim: 4096 }
+        pre_ffn_rmsnorm:        { seq_len: 4096, head_dim: 4096 }
+        ffn_activation_silu:    { seq_len: 4096, head_dim: 14336 }
+        attention_softmax:      { seq_len: 4096, head_dim: 4096 }
 
     Decode:
       gemm_ops:
@@ -559,10 +559,10 @@ models:
         qk: { batch_size: 32, m: 1, k: 128, n: 4096 }
         pv: { batch_size: 32, m: 1, k: 4096, n: 128 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 4096 }
-        pre_ffn_norm_rms:       { size: 4096 }
-        ffn_activation_silu:    { size: 14336 }
-        attention_softmax:      { size: 32 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 1, head_dim: 4096 }
+        pre_ffn_rmsnorm:        { seq_len: 1, head_dim: 4096 }
+        ffn_activation_silu:    { seq_len: 1, head_dim: 14336 }
+        attention_softmax:      { seq_len: 1, head_dim: 4096 }
 
   Meta_Llama_3_1_70B:
     hidden_size: 8192
@@ -582,10 +582,10 @@ models:
         qk: { batch_size: 64, m: 4096, k: 128, n: 4096 }
         pv: { batch_size: 64, m: 4096, k: 4096, n: 128 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 8192 }
-        pre_ffn_norm_rms:       { size: 8192 }
-        ffn_activation_silu:    { size: 28672 }
-        attention_softmax:      { size: 64 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 4096, head_dim: 8192 }
+        pre_ffn_rmsnorm:        { seq_len: 4096, head_dim: 8192 }
+        ffn_activation_silu:    { seq_len: 4096, head_dim: 28672 }
+        attention_softmax:      { seq_len: 4096, head_dim: 4096 }
 
     Decode:
       gemm_ops:
@@ -598,10 +598,10 @@ models:
         qk: { batch_size: 64, m: 1, k: 128, n: 4096 }
         pv: { batch_size: 64, m: 1, k: 4096, n: 128 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 8192 }
-        pre_ffn_norm_rms:       { size: 8192 }
-        ffn_activation_silu:    { size: 28672 }
-        attention_softmax:      { size: 64 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 1, head_dim: 8192 }
+        pre_ffn_rmsnorm:        { seq_len: 1, head_dim: 8192 }
+        ffn_activation_silu:    { seq_len: 1, head_dim: 28672 }
+        attention_softmax:      { seq_len: 1, head_dim: 4096 }
 
   Meta_Llama_2_7B:
     hidden_size: 4096
@@ -621,10 +621,10 @@ models:
         qk: { batch_size: 32, m: 4096, k: 128, n: 4096 }
         pv: { batch_size: 32, m: 4096, k: 4096, n: 128 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 4096 }
-        pre_ffn_norm_rms:       { size: 4096 }
-        ffn_activation_silu:    { size: 11008 }
-        attention_softmax:      { size: 32 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 4096, head_dim: 4096 }
+        pre_ffn_rmsnorm:        { seq_len: 4096, head_dim: 4096 }
+        ffn_activation_silu:    { seq_len: 4096, head_dim: 11008 }
+        attention_softmax:      { seq_len: 4096, head_dim: 4096 }
 
     Decode:
       gemm_ops:
@@ -637,10 +637,10 @@ models:
         qk: { batch_size: 32, m: 1, k: 128, n: 4096 }
         pv: { batch_size: 32, m: 1, k: 4096, n: 128 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 4096 }
-        pre_ffn_norm_rms:       { size: 4096 }
-        ffn_activation_silu:    { size: 11008 }
-        attention_softmax:      { size: 32 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 1, head_dim: 4096 }
+        pre_ffn_rmsnorm:        { seq_len: 1, head_dim: 4096 }
+        ffn_activation_silu:    { seq_len: 1, head_dim: 11008 }
+        attention_softmax:      { seq_len: 1, head_dim: 4096 }
 
   Meta_Llama_2_13B:
     hidden_size: 5120
@@ -660,10 +660,10 @@ models:
         qk: { batch_size: 40, m: 4096, k: 128, n: 4096 }
         pv: { batch_size: 40, m: 4096, k: 4096, n: 128 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 5120 }
-        pre_ffn_norm_rms:       { size: 5120 }
-        ffn_activation_silu:    { size: 13824 }
-        attention_softmax:      { size: 40 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 4096, head_dim: 5120 }
+        pre_ffn_rmsnorm:        { seq_len: 4096, head_dim: 5120 }
+        ffn_activation_silu:    { seq_len: 4096, head_dim: 13824 }
+        attention_softmax:      { seq_len: 4096, head_dim: 4096 }
 
     Decode:
       gemm_ops:
@@ -676,10 +676,10 @@ models:
         qk: { batch_size: 40, m: 1, k: 128, n: 4096 }
         pv: { batch_size: 40, m: 1, k: 4096, n: 128 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 5120 }
-        pre_ffn_norm_rms:       { size: 5120 }
-        ffn_activation_silu:    { size: 13824 }
-        attention_softmax:      { size: 40 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 1, head_dim: 5120 }
+        pre_ffn_rmsnorm:        { seq_len: 1, head_dim: 5120 }
+        ffn_activation_silu:    { seq_len: 1, head_dim: 13824 }
+        attention_softmax:      { seq_len: 1, head_dim: 4096 }
 
   Meta_Llama_2_70B:
     hidden_size: 8192
@@ -699,10 +699,10 @@ models:
         qk: { batch_size: 64, m: 4096, k: 128, n: 4096 }
         pv: { batch_size: 64, m: 4096, k: 4096, n: 128 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 8192 }
-        pre_ffn_norm_rms:       { size: 8192 }
-        ffn_activation_silu:    { size: 28672 }
-        attention_softmax:      { size: 64 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 4096, head_dim: 8192 }
+        pre_ffn_rmsnorm:        { seq_len: 4096, head_dim: 8192 }
+        ffn_activation_silu:    { seq_len: 4096, head_dim: 28672 }
+        attention_softmax:      { seq_len: 4096, head_dim: 4096 }
 
     Decode:
       gemm_ops:
@@ -715,7 +715,7 @@ models:
         qk: { batch_size: 64, m: 1, k: 128, n: 4096 }
         pv: { batch_size: 64, m: 1, k: 4096, n: 128 }
       elementwise_ops:
-        pre_attention_norm_rms: { size: 8192 }
-        pre_ffn_norm_rms:       { size: 8192 }
-        ffn_activation_silu:    { size: 28672 }
-        attention_softmax:      { size: 64 * 4096 }
+        pre_attention_rmsnorm:  { seq_len: 1, head_dim: 8192 }
+        pre_ffn_rmsnorm:        { seq_len: 1, head_dim: 8192 }
+        ffn_activation_silu:    { seq_len: 1, head_dim: 28672 }
+        attention_softmax:      { seq_len: 1, head_dim: 4096 }

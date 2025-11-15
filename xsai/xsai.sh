@@ -11,7 +11,7 @@ usage() {
     echo "OPERATOR: "
     echo "  gemm, layernorm, rmsnorm, relu, silu, softmax, (clean, help)"
     echo "MODE: "
-    echo "  dump, debug, (empty, default run)"
+    echo "  dump, debug, run"
     echo "MODEL:"
     echo "  Qwen3_30B_A3B, Qwen3_235B_A22B, Qwen3_0_6B, Qwen3_1_7B, Qwen3_4B, Qwen3_8B, Qwen3_14B, Qwen3_32B,"
     echo "  DeepSeek_V3, DeepSeek_V3_0324, DeepSeek_V3_1,"
@@ -49,24 +49,39 @@ set_debug_env() {
 
 run_test() {
     local name="$1"     # e.g., gemm
-    local mode="${2:-}" # e.g., dump
 
-    # Check if this is the 'gemm' test which requires model parameters
-    if [ "$name" == "gemm" ]; then
-        if [ "$#" -lt 6 ]; then
-            echo "Error: 'gemm' test requires MODEL, STAGE, OP, and NAME arguments."
+    case "$name" in
+        gemm|layernorm|rmsnorm|relu|silu|softmax)
+            if [ "$#" -lt 6 ]; then
+                echo "Error: 'gemm' test requires MODEL, STAGE, OP, and NAME arguments."
+                usage
+            fi
+            ;;
+        clean)
+            rm -rf "$DUMP_DIR"
+            echo "Cleaned up $DUMP_DIR"
+            exit 0
+            ;;
+        help)
             usage
-        fi
-        # Capture the model-specific parameters
-        local model_arg="$3"
-        local stage_arg="$4"
-        local op_arg="$5"
-        local name_arg="$6"
-    fi
+            exit 0
+            ;;
+        *)
+            echo "Error: Unknown operator '$name'."
+            usage
+            ;;
+    esac
+    
+    local mode="$2" 
+    local model_arg="$3"
+    local stage_arg="$4"
+    local op_arg="$5"
+    local name_arg="$6"
 
     set_cpu_backend
     case "$mode" in
-        "") ;;
+        run)
+            ;;
         dump)
             set_dump_env
             ;;
@@ -84,6 +99,7 @@ run_test() {
     # --- Execute the test ---
     case "$name" in
         gemm)
+            echo "Running GEMM test..."
             python3 gemm.py \
                 --model "$model_arg" \
                 --stage "$stage_arg" \
@@ -91,31 +107,44 @@ run_test() {
                 --name "$name_arg"
             ;;
         layernorm)
-            # Add layernorm script call here
-            echo "Layernorm test logic goes here..."
+            echo "Running LayerNorm test..."
+            python3 layernorm.py \
+                --model "$model_arg" \
+                --stage "$stage_arg" \
+                --op "$op_arg" \
+                --name "$name_arg"
             ;;
         rmsnorm)
-            # Add rmsnorm script call here
-            echo "RMSNorm test logic goes here..."
+            echo "Running RMSNorm test..."
+            python3 rmsnorm.py \
+                --model "$model_arg" \
+                --stage "$stage_arg" \
+                --op "$op_arg" \
+                --name "$name_arg"
             ;;
         relu)
-            # Add relu script call here
-            echo "ReLU test logic goes here..."
+            echo "Running ReLU test..."
+            python3 relu.py \
+                --model "$model_arg" \
+                --stage "$stage_arg" \
+                --op "$op_arg" \
+                --name "$name_arg"
             ;;
         silu)
-            # Add silu script call here
-            echo "SiLU test logic goes here..."
+            echo "Running SiLU test..."
+            python3 silu.py \
+                --model "$model_arg" \
+                --stage "$stage_arg" \
+                --op "$op_arg" \
+                --name "$name_arg"
             ;;
         softmax)
-            # Add softmax script call here
-            echo "Softmax test logic goes here..."
-            ;;
-        clean)
-            rm -rf "$DUMP_DIR"
-            echo "Cleaned up $DUMP_DIR"
-            ;;
-        help)
-            usage
+            echo "Running Softmax test..."
+            python3 softmax.py \
+                --model "$model_arg" \
+                --stage "$stage_arg" \
+                --op "$op_arg" \
+                --name "$name_arg"
             ;;
         *)
             usage
