@@ -100,7 +100,7 @@ run_test() {
     case "$name" in
         gemm)
             echo "Running GEMM test..."
-            python3 gemm.py \
+            MAX_JOBS=2 python3 gemm.py \
                 --model "$model_arg" \
                 --stage "$stage_arg" \
                 --op "$op_arg" \
@@ -108,7 +108,7 @@ run_test() {
             ;;
         layernorm)
             echo "Running LayerNorm test..."
-            python3 layernorm.py \
+            MAX_JOBS=2 python3 layernorm.py \
                 --model "$model_arg" \
                 --stage "$stage_arg" \
                 --op "$op_arg" \
@@ -116,7 +116,7 @@ run_test() {
             ;;
         rmsnorm)
             echo "Running RMSNorm test..."
-            python3 rmsnorm.py \
+            MAX_JOBS=2 python3 rmsnorm.py \
                 --model "$model_arg" \
                 --stage "$stage_arg" \
                 --op "$op_arg" \
@@ -124,7 +124,7 @@ run_test() {
             ;;
         relu)
             echo "Running ReLU test..."
-            python3 relu.py \
+            MAX_JOBS=2 python3 relu.py \
                 --model "$model_arg" \
                 --stage "$stage_arg" \
                 --op "$op_arg" \
@@ -132,7 +132,7 @@ run_test() {
             ;;
         silu)
             echo "Running SiLU test..."
-            python3 silu.py \
+            MAX_JOBS=2 python3 silu.py \
                 --model "$model_arg" \
                 --stage "$stage_arg" \
                 --op "$op_arg" \
@@ -140,7 +140,7 @@ run_test() {
             ;;
         softmax)
             echo "Running Softmax test..."
-            python3 softmax.py \
+            MAX_JOBS=2 python3 softmax.py \
                 --model "$model_arg" \
                 --stage "$stage_arg" \
                 --op "$op_arg" \
