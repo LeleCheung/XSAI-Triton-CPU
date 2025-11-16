@@ -6,7 +6,7 @@ import yaml
 import sys
 
 # ------------------------------------------------------------------
-# 1. Triton RMSNorm Kernel (Unchanged from original)
+# 1. Triton RMSNorm Kernel
 # ------------------------------------------------------------------
 
 @triton.jit
@@ -58,7 +58,7 @@ def rms_norm_kernel(
         tl.store(output_row_ptr + col_offsets, y, mask=mask)
 
 # ------------------------------------------------------------------
-# 2. Triton Wrapper (Modified)
+# 2. Triton Wrapper
 # ------------------------------------------------------------------
 
 def triton_rms_norm(x: torch.Tensor, weight: torch.Tensor, eps: float = 1e-5):
@@ -109,7 +109,7 @@ def triton_rms_norm(x: torch.Tensor, weight: torch.Tensor, eps: float = 1e-5):
 
 
 # ------------------------------------------------------------------
-# 3. Config loader (Copied from silu.py)
+# 3. Config loader
 # ------------------------------------------------------------------
 
 def load_config():
@@ -130,7 +130,7 @@ def load_config():
         sys.exit(1)
 
 # ------------------------------------------------------------------
-# 4. Main function (Adapted from silu.py)
+# 4. Main function
 # ------------------------------------------------------------------
 
 def main():
