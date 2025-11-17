@@ -2,6 +2,8 @@
 
 # Introduction
 
+CAUTION：对于Softmax测试，需要在Python中限制线程数
+
 ```
 git clone https://github.com/LeleCheung/XSAI-Triton-CPU.git
 
