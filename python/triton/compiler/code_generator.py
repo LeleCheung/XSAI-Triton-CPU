@@ -538,6 +538,7 @@ class CodeGenerator(ast.NodeVisitor):
         kwarg_names = self.visit(node.kwarg)
         return arg_names, kwarg_names
 
+
     def visit_arg(self, node):
         ast.NodeVisitor.generic_visit(self, node)
         return node.arg

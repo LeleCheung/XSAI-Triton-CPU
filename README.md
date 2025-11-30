@@ -22,6 +22,30 @@ cd xsai
 ./xsai.sh gemm dump Qwen3_30B_A3B Prefill gemm_ops up_proj
 ```
 
+## XSAI Kernel Debugging & Technical Findings
+
+During the development of the standalone CPU GEMM kernel in the `xsai/` directory, we encountered and solved several critical system-level issues. Below is a summary of the technical findings:
+
+### 1. AMX System Call Anomaly
+*   **Issue**: The standard Linux system call to enable AMX, `arch_prctl(ARCH_REQ_XCOMP_PERM, bitmask)`, fails with `EINVAL` (Invalid Argument) on the current test environment.
+*   **Discovery**: We discovered that the Triton C++ backend source code contains a "buggy" implementation where it passes the integer `18` directly instead of the correct bitmask `(1 << 17) | (1 << 18)`.
+*   **Workaround**: Surprisingly, this "incorrect" syscall (passing `18`) **succeeds** on this specific system. We exploited this behavior in `gemm_run.py` to manually enable AMX permissions via `ctypes`, bypassing the standard failure.
+
+### 2. ABI Mismatch & Reverse Engineering
+*   **Crash**: The AOT-compiled kernel initially crashed with `Segmentation fault` when invoked via `ctypes`.
+*   **Root Cause**: The Triton compiler optimized out the `BATCH` argument from the kernel signature because it was unused in the kernel body (only `pid_b` was used). However, our Python runner was still passing `BATCH`, causing a mismatch in the System V ABI (argument shifting).
+    *   *Python passed*: `[A, B, C, M, N, K, BATCH, grid0, grid1, grid2]`
+    *   *Kernel expected*: `[A, B, C, M, N, K, grid0, grid1, grid2]`
+*   **Fix**: We reverse-engineered the naked kernel signature and removed the `BATCH` argument from the `ctypes` call in `gemm_run.py`, restoring correct alignment.
+
+### 3. Standalone Execution Workflow
+The files in `xsai/` demonstrate a complete workflow to run Triton CPU kernels without the heavy Triton compiler dependency:
+*   `gemm_build.py`: Compiles Python Triton code to a standalone `.so` shared library.
+*   `gemm_run.py`: A lightweight runner that manually enables AMX (via the syscall backdoor) and executes the kernel using `ctypes` with the corrected ABI.
+*   `gemm_test.py`: A JIT-based debugging tool used to verify assembly code (`tdpbssd` instructions) and correctness.
+*   `amx_test.c`: A C utility to verify OS AMX permissions.
+*   `triton_bug_repro.c`: A C utility to reproduce the Triton syscall behavior.
+
 # Triton-CPU
 
 A long-lived development branch to build an experimental CPU backend for [Triton](https://github.com/openai/triton).
