@@ -16,7 +16,7 @@ int main() {
     
     if (ret == 0) {
         printf("Success! syscall(..., 18) returned 0.\n");
-        printf("This confirms Triton's cpu.enable_amx() is a FALSE POSITIVE.\n");
+        printf("This confirms Triton's cpu.enable_amx() is a POSITIVE.\n");
         return 0;
     } else {
         perror("syscall failed");
